@@ -1,0 +1,54 @@
+
+import os
+import uuid
+
+from flask import Flask, jsonify, render_template, request
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = Flask(__name__)
+
+PLANS = {
+    "7days": {"name": "7 дней", "price": 10000, "days": 7},
+    "30days": {"name": "30 дней", "price": 25900, "days": 30},
+    "90days": {"name": "90 дней", "price": 50000, "days": 90},
+    "lifetime": {"name": "Навсегда", "price": 74900, "days": None},
+}
+
+
+@app.route("/")
+def index():
+    return render_template("index.html", plans=PLANS)
+
+
+@app.route("/api/create-payment", methods=["POST"])
+def create_payment():
+    data = request.get_json(silent=True) or {}
+    plan_id = data.get("plan")
+    plan = PLANS.get(plan_id)
+
+    if not plan:
+        return jsonify({"error": "Неизвестный тариф"}), 400
+
+    shop_id = os.getenv("YOOKASSA_SHOP_ID")
+    secret_key = os.getenv("YOOKASSA_SECRET_KEY")
+
+    if not shop_id or not secret_key:
+        return jsonify({
+            "error": "Оплата пока не настроена. Попробуйте позже."
+        }), 503
+
+    # Здесь нужно создать платёж через API ЮKassa.
+    # Пока реальные деньги не списываются.
+    order_id = str(uuid.uuid4())
+
+    return jsonify({
+        "error": "Интеграция ЮKassa ещё не включена",
+        "order_id": order_id,
+        "plan": plan["name"],
+    }), 503
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
